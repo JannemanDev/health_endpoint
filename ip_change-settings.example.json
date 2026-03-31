@@ -1,0 +1,21 @@
+{
+  "hostnames": [
+    {
+      "hostname": "EXAMPLE.COM", 	//CHANGE!
+      "expected_ip": ""	//Optional
+    }
+  ],
+  "public_ip": {
+    "expected_ip": ""	//Optional
+  },
+  "check_dns": true,
+  "check_public_ip": true,
+  "state_file": "ip_state.json",
+  "log_to_console": true,
+  "kuma": {
+    "enabled": true,
+    "push_url": "http://SOMEHOSTNAME/api/push/SOMEMAGICSTRING", //CHANGE! See Kuma Dashboard > Push monitor settings
+    "timeout_seconds": 5
+  },
+  "public_ip_service": "https://api.ipify.org"
+}
