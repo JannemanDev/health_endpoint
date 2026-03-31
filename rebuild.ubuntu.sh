@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x  # Show commands as they are executed
 
+# adjust this folder!
+cd /volume1/Apps/health_endpoint/
+
 sudo docker stop health_server
 sudo docker rm health_server
 
