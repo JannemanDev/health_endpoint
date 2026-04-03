@@ -6,7 +6,8 @@ import signal
 app = Flask(__name__)
 script_name = os.path.basename(__file__)
 base_name = os.path.splitext(script_name)[0]
-PID_FILE = os.path.join("/tmp", base_name + ".pid")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PID_FILE = os.path.join(SCRIPT_DIR, base_name + ".pid")
 
 
 def is_already_running(pid_file):
@@ -15,11 +16,11 @@ def is_already_running(pid_file):
         try:
             with open(pid_file, "r") as f:
                 pid = int(f.read())
-            os.kill(pid, 0)  # Check if process is alive
-            print(f"Already running with PID {pid}, exiting {script_name}.")
+            os.kill(pid, 0)  # Check if process is alive else it will throw an exception
+            print(f"Already running with PID {pid}, exiting {script_name}.", flush=True)
             return True
         except (OSError, ValueError):
-            print(f"Stale or invalid PID file found, continuing {script_name}.")
+            print(f"Stale or invalid PID file found, continuing {script_name}.", flush=True)
             os.remove(pid_file)
     return False
 
