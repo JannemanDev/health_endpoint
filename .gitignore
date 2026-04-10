@@ -1,2 +1,5 @@
 *settings.json
 ip_state*.json
+__pycache__/
+ip_lookup_app/
+state_output/

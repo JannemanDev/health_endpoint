@@ -6,6 +6,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 
 # ---------------------------
@@ -45,9 +46,12 @@ CHECK_PUBLIC_IP = CONFIG.get("check_public_ip", True)
 KUMA = CONFIG.get("kuma", {})
 KUMA_ENABLED = KUMA.get("enabled", False)
 
-PUBLIC_IP_SERVICE = CONFIG.get("public_ip_service", "https://api.ipify.org")
 PUBLIC_IP_CONFIG = CONFIG.get("public_ip", {})
 EXPECTED_PUBLIC_IP = (PUBLIC_IP_CONFIG.get("expected_ip") or "").strip() or None
+PUBLIC_IP_LOOKUP_CONFIG = require("public_ip_lookup_config")
+IP_LOOKUP_SETTINGS_PATH = (
+    Path(CONFIG_PATH).resolve().parent / PUBLIC_IP_LOOKUP_CONFIG
+).resolve()
 
 
 # ---------------------------
@@ -91,10 +95,117 @@ def get_dns_ip(hostname):
 
 
 def get_public_ip():
-    try:
-        return requests.get(PUBLIC_IP_SERVICE, timeout=5).text.strip()
-    except Exception:
+    services, ip_keys, timeout_seconds, last_index_file = load_ip_lookup_settings()
+    if not services:
+        log("[PUBLIC IP] No lookup services configured")
         return None
+    if timeout_seconds <= 0:
+        timeout_seconds = 5
+
+    last_index = read_last_service_index(last_index_file)
+    service_count = len(services)
+    current_index = (last_index + 1) % service_count
+
+    for _ in range(service_count):
+        service_url = services[current_index]
+        log(f"[PUBLIC IP] Trying lookup service: {service_url}")
+        try:
+            response = requests.get(
+                service_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=timeout_seconds,
+            )
+            response.raise_for_status()
+            ip = extract_ip_from_response(response, ip_keys)
+            if ip:
+                if current_index != last_index:
+                    write_last_service_index(last_index_file, current_index)
+                log(f"[PUBLIC IP] Using lookup service: {service_url}")
+                return ip
+            log(f"[PUBLIC IP] Service returned no IP: {service_url}")
+        except Exception as e:
+            log(f"[PUBLIC IP] Lookup failed: {service_url} ({type(e).__name__}: {e})")
+        current_index = (current_index + 1) % service_count
+
+    log("[PUBLIC IP] All lookup services failed")
+    return None
+
+
+def load_ip_lookup_settings():
+    if not IP_LOOKUP_SETTINGS_PATH.exists():
+        return [], [], 5, None
+
+    try:
+        with open(IP_LOOKUP_SETTINGS_PATH, "r") as f:
+            settings = json.load(f)
+    except Exception:
+        return [], [], 5, None
+
+    services = list(settings.get("ip_lookup_services", []))
+    ip_keys = settings.get("ip_keys", [])
+    timeout_seconds = settings.get("check_ip_timeout", 5)
+    index_file = settings.get("last_ip_lookup_service_index_file")
+
+    index_path = None
+    if index_file:
+        index_path = (IP_LOOKUP_SETTINGS_PATH.parent / index_file).resolve()
+
+    return services, ip_keys, timeout_seconds, index_path
+
+
+def read_last_service_index(index_path):
+    if not index_path:
+        return -1
+    try:
+        if index_path.exists():
+            return int(index_path.read_text().strip())
+    except Exception:
+        pass
+    return -1
+
+
+def write_last_service_index(index_path, index):
+    if not index_path:
+        return
+    try:
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        index_path.write_text(str(index))
+    except Exception:
+        pass
+
+
+def extract_ip_from_response(response, ip_keys):
+    content_type = (response.headers.get("Content-Type", "") or "").lower()
+    if "application/json" in content_type:
+        try:
+            data = response.json()
+            for key in ip_keys:
+                if key in data and data[key]:
+                    return str(data[key]).strip()
+        except Exception:
+            pass
+
+    key_value_ip = parse_key_value_response(response.text)
+    if key_value_ip:
+        return key_value_ip
+
+    return extract_ip_from_text(response.text)
+
+
+def parse_key_value_response(text):
+    for line in text.splitlines():
+        if line.startswith("ip="):
+            return line.split("=", 1)[1].strip()
+    return None
+
+
+def extract_ip_from_text(text):
+    import re
+
+    match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", (text or "").strip())
+    if match:
+        return match.group(0)
+    return None
 
 
 # ---------------------------
@@ -168,6 +279,12 @@ def main():
 
         dns_ip = get_dns_ip(host) if CHECK_DNS else None
         last_dns = host_results.get(host, {}).get("dns_ip")
+
+        if CHECK_DNS:
+            if dns_ip:
+                log(f"[DNS] Checked {host} -> {dns_ip}")
+            else:
+                log(f"[DNS] Checked {host} -> unresolved")
 
         if dns_ip:
             if last_dns and dns_ip != last_dns:

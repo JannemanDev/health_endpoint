@@ -17,5 +17,5 @@
     "push_url": "http://SOMEHOSTNAME/api/push/SOMEMAGICSTRING", //CHANGE! See Kuma Dashboard > Push monitor settings
     "timeout_seconds": 5
   },
-  "public_ip_service": "https://api.ipify.org"
+  "public_ip_lookup_config": "public_ip_lookup_services.json"
 }
