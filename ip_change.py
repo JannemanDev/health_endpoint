@@ -43,8 +43,11 @@ STATE_FILE = require("state_file")
 CHECK_DNS = CONFIG.get("check_dns", True)
 CHECK_PUBLIC_IP = CONFIG.get("check_public_ip", True)
 
-KUMA = CONFIG.get("kuma", {})
-KUMA_ENABLED = KUMA.get("enabled", False)
+KUMA_CONFIG = CONFIG.get("kuma", [])
+if isinstance(KUMA_CONFIG, dict):
+    KUMA_CONFIG = [KUMA_CONFIG]
+elif not isinstance(KUMA_CONFIG, list):
+    KUMA_CONFIG = []
 
 PUBLIC_IP_CONFIG = CONFIG.get("public_ip", {})
 EXPECTED_PUBLIC_IP = (PUBLIC_IP_CONFIG.get("expected_ip") or "").strip() or None
@@ -211,23 +214,33 @@ def extract_ip_from_text(text):
 # ---------------------------
 # Uptime Kuma push (optional)
 # ---------------------------
-def notify_kuma(message):
-    if not KUMA_ENABLED:
+def notify_kuma(message, status="down"):
+    if not KUMA_CONFIG:
         return
 
-    params = {"status": "down", "msg": message}
+    params = {"status": status, "msg": message}
 
-    timeout_seconds = KUMA.get("timeout_seconds", 5)
-    push_url = KUMA["push_url"]
-    prepared_url = requests.Request("GET", push_url, params=params).prepare().url
+    for kuma_entry in KUMA_CONFIG:
+        if not isinstance(kuma_entry, dict):
+            continue
+        if not kuma_entry.get("enabled", False):
+            continue
 
-    log(f"[KUMA] Sending GET {prepared_url} with timeout={timeout_seconds}s")
+        push_url = kuma_entry.get("push_url")
+        if not push_url:
+            log("[WARN] Kuma notify skipped: missing push_url")
+            continue
 
-    try:
-        requests.get(push_url, params=params, timeout=timeout_seconds)
-        log("[KUMA] Push sent")
-    except Exception as e:
-        log(f"[WARN] Kuma notify failed: {e}")
+        timeout_seconds = kuma_entry.get("timeout_seconds", 5)
+        prepared_url = requests.Request("GET", push_url, params=params).prepare().url
+
+        log(f"[KUMA] Sending GET {prepared_url} with timeout={timeout_seconds}s")
+
+        try:
+            requests.get(push_url, params=params, timeout=timeout_seconds)
+            log("[KUMA] Push sent")
+        except Exception as e:
+            log(f"[WARN] Kuma notify failed: {e}")
 
 
 # ---------------------------
@@ -302,9 +315,11 @@ def main():
     if all_changes:
         msg = " | ".join(all_changes)
         log("[CHANGE] " + msg)
-        notify_kuma(msg)
+        notify_kuma(msg, status="down")
     else:
-        log("[OK] No changes detected")
+        msg = "No changes detected"
+        log(f"[OK] {msg}")
+        notify_kuma(msg, status="up")
 
     # ---------------------------
     # Save state

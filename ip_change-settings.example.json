@@ -12,10 +12,12 @@
   "check_public_ip": true,
   "state_file": "ip_state.json",
   "log_to_console": true,
-  "kuma": {
-    "enabled": true,
-    "push_url": "http://SOMEHOSTNAME/api/push/SOMEMAGICSTRING", //CHANGE! See Kuma Dashboard > Push monitor settings
-    "timeout_seconds": 5
-  },
+  "kuma": [
+    {
+      "enabled": true,
+      "push_url": "http://SOMEHOSTNAME/api/push/SOMEMAGICSTRING", //CHANGE! See Kuma Dashboard > Push monitor settings
+      "timeout_seconds": 5
+    }
+  ],
   "public_ip_lookup_config": "public_ip_lookup_services.json"
 }
