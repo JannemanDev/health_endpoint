@@ -7,7 +7,20 @@ app = Flask(__name__)
 script_name = os.path.basename(__file__)
 base_name = os.path.splitext(script_name)[0]
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PID_FILE = os.path.join(SCRIPT_DIR, base_name + ".pid")
+
+
+def _pid_file_path():
+    override = os.environ.get("HEALTH_SERVER_PID_FILE")
+    if override:
+        return override
+    default = os.path.join(SCRIPT_DIR, base_name + ".pid")
+    if os.access(SCRIPT_DIR, os.W_OK):
+        return default
+    tmp = os.environ.get("TMPDIR", "/tmp")
+    return os.path.join(tmp, base_name + ".pid")
+
+
+PID_FILE = _pid_file_path()
 
 
 def is_already_running(pid_file):
