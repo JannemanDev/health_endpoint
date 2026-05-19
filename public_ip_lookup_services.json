@@ -2,7 +2,6 @@
   "ip_lookup_services": [
     "https://1.1.1.1/cdn-cgi/trace",
     "http://myip.dnsomatic.com",
-    "https://api.hostip.info/get_json.php",
     "https://api.ip.pe.kr/json/",
     "https://api.ip.sb/geoip",
     "https://api.ipbase.com/v1/json/",

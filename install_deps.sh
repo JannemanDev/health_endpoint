@@ -11,13 +11,19 @@ if ! command -v python3 >/dev/null 2>&1; then
 	exit 1
 fi
 
-if [[ ! -d "$VENV_DIR" ]]; then
+VENV_PYTHON="$VENV_DIR/bin/python"
+
+if [[ ! -x "$VENV_PYTHON" ]]; then
+	if [[ -d "$VENV_DIR" ]]; then
+		echo "Removing incomplete virtual environment at $VENV_DIR"
+		rm -rf "$VENV_DIR"
+	fi
 	echo "Creating virtual environment in $VENV_DIR"
 	python3 -m venv "$VENV_DIR"
 fi
 
-"$VENV_DIR/bin/python" -m pip install --upgrade pip
-"$VENV_DIR/bin/pip" install -r requirements.txt
+"$VENV_PYTHON" -m pip install --upgrade pip
+"$VENV_PYTHON" -m pip install -r requirements.txt
 
 echo ""
 echo "Dependencies installed."

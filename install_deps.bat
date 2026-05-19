@@ -11,6 +11,10 @@ if errorlevel 1 (
 )
 
 if not exist "%VENV_DIR%\Scripts\python.exe" (
+	if exist "%VENV_DIR%" (
+		echo Removing incomplete virtual environment at %VENV_DIR%
+		rmdir /s /q "%VENV_DIR%"
+	)
 	echo Creating virtual environment in %VENV_DIR%
 	python -m venv "%VENV_DIR%"
 )
