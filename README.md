@@ -5,6 +5,7 @@ Two related tools in one repository:
 | Component | Purpose |
 |-----------|---------|
 | **health_server** | Minimal Flask HTTP server exposing `GET /health` (200 OK) for container and load-balancer probes |
+| **whatsmyip_server** | Token-protected `GET /whatsmyip` returning the client IPv4/IPv6 seen on the request (JSON) |
 | **ip_change** | Monitors DNS and public IP changes, keeps state on disk, and optionally notifies [Uptime Kuma](https://github.com/louislam/uptime-kuma) push monitors |
 
 The Docker image runs only `health_server.py`. `ip_change.py` is meant to run on a host (cron, Task Scheduler, or manually)—often the same machine whose IP or DNS you want to watch.
@@ -59,6 +60,47 @@ With the project venv (see below):
 source ./activate_venv.sh
 python health_server.py
 ```
+
+---
+
+## WhatsMyIP server (`whatsmyip_server.py`)
+
+Token-protected endpoint that reports which client address the server saw on the connection. A single HTTP request is either IPv4 or IPv6, so one of the fields is usually `null`; call over both stacks (or use separate v4/v6 hostnames) to learn both addresses.
+
+### Configuration
+
+```bash
+cp whatsmyip-settings.example.json whatsmyip-settings.json
+# Edit port and token
+```
+
+### Run
+
+```bash
+./run_whatsmyip_server.sh whatsmyip-settings.json
+```
+
+### Verify
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_TOKEN" "http://localhost:8080/whatsmyip"
+# {"ipv4":"1.2.3.4","ipv6":null}
+```
+
+Auth methods are configurable under `auth` in settings (defaults: bearer on, query off in the example file):
+
+- `accept_bearer`: `Authorization: Bearer <token>` or `X-Auth-Token`
+- `accept_query_param`: `?token=<token>` (avoid on production; URLs leak into logs)
+
+At least one must be enabled.
+
+Request logging prints every request with client IP, auth result on `/whatsmyip` (`ok` / `missing` / `invalid`), and status code. Tokens are never logged.
+
+- `log_to_console` (default `true`) — request log to stdout
+- `log_to_file` (default `true`) — request log to `log_file` when set
+- `log_file` (optional) — request log path; relative paths are resolved from the settings file directory
+- `ip_log_to_file` (default `true`) — IP stats to `ip_log_file` when set
+- `ip_log_file` (optional) — tab-separated stats for successful `/whatsmyip` responses only. First line is header `ipv4`, `ipv6`, `count`; each unique address pair is one data row; `count` increments on repeat visits. Empty column when that stack was not seen on the request.
 
 ---
 

@@ -1,0 +1,13 @@
+{
+  "port": 8080,
+  "token": "CHANGE_ME",
+  "auth": {
+    "accept_bearer": true,
+    "accept_query_param": true
+  },
+  "log_to_console": true,
+  "log_to_file": true,
+  "log_file": "whatsmyip.log",
+  "ip_log_to_file": true,
+  "ip_log_file": "whatsmyip_ips.tsv"
+}

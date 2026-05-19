@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 ip_lookup_app/
 state_output/
+whatsmyip*.log
+whatsmyip_ips.tsv
+whatsmyip_ips.tsv.tmp
+*.pid
