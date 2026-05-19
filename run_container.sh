@@ -8,4 +8,3 @@ sudo docker run -d \
 	--tmpfs /tmp \
 	--cap-drop ALL \
 	health_server:latest
-

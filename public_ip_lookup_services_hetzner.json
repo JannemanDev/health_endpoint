@@ -1,0 +1,33 @@
+{
+  "ip_lookup_services": [
+    "https://1.1.1.1/cdn-cgi/trace",
+    "http://myip.dnsomatic.com",
+    "https://api.ip.pe.kr/json/",
+    "https://checkip.synology.com/",
+    "https://geolocation-db.com/json/",
+    "https://ifconfig.co/json",
+    "https://api.ipify.org?format=json",
+    "https://checkip.amazonaws.com",
+    "https://ipinfo.io/json",
+    "https://ipv4.icanhazip.com",
+    "https://v4.ident.me/.json",
+    "http://ip1.dynupdate.no-ip.com",
+    "https://ip.quotaguard.com/json",
+    "http://whatismyip.akamai.com",
+    "https://l2.io/ip",
+    "https://httpbin.org/ip"
+  ],
+  "ip_keys": [
+    "ip",
+    "ip_address",
+    "ipaddr",
+    "ip_addr",
+    "address",
+    "ipAddress",
+    "YourFuckingIPAddress",
+    "IPv4",
+    "origin"
+  ],
+  "check_ip_timeout": 5,
+  "last_ip_lookup_service_index_file": "state_output/last_ip_lookup_service_index.txt"
+}

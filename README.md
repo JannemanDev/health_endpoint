@@ -74,7 +74,15 @@ python health_server.py
 
 2. Set hostnames, optional expected IPs, Kuma push URLs, and paths as needed.
 
-3. Public IP lookup services are defined in [public_ip_lookup_services.json](public_ip_lookup_services.json) (referenced by `public_ip_lookup_config` in your settings file).
+3. Public IP lookup services are defined in a JSON file referenced by `public_ip_lookup_config` in your settings file (default: [public_ip_lookup_services.json](public_ip_lookup_services.json)).
+
+   **Hetzner / dual-stack (IPv4 + IPv6):** On hosts with both addresses, many generic “what is my IP” APIs return the **IPv6** address. That can make `ip_change.py` report false changes or compare against the wrong address. Use [public_ip_lookup_services_hetzner.json](public_ip_lookup_services_hetzner.json) instead — a shorter list of services chosen to return **IPv4 only** (for example `https://ipv4.icanhazip.com` and `https://v4.ident.me/.json`).
+
+   In your settings file:
+
+   ```json
+   "public_ip_lookup_config": "public_ip_lookup_services_hetzner.json"
+   ```
 
 4. State is written to the file named in `state_file` (default `ip_state.json`). Lookup rotation state goes under `state_output/` when configured.
 
@@ -166,11 +174,11 @@ python ip_change.py ip_change-home-settings.json
 
 #### 4. Wrapper script
 
-[run_ip_change.sh](run_ip_change.sh) runs the monitor with a fixed config path (edit the script if your settings file name differs):
+[run_ip_change.sh](run_ip_change.sh) runs the monitor; pass your settings file as the only argument (uses `.venv/bin/python` when present):
 
 ```bash
 chmod +x run_ip_change.sh
-./run_ip_change.sh
+./run_ip_change.sh ip_change-settings.json
 ```
 
 #### 5. Cron (example)
@@ -196,13 +204,14 @@ Run every 15 minutes with the project venv:
 | `health_server.py` | Flask `/health` endpoint |
 | `ip_change.py` | DNS / public IP monitor |
 | `ip_change-settings.example.json` | Sample config (copy to `*settings.json`) |
-| `public_ip_lookup_services.json` | Public IP API URLs and options |
+| `public_ip_lookup_services.json` | Default public IP API URLs and options |
+| `public_ip_lookup_services_hetzner.json` | IPv4-only lookup list for Hetzner / dual-stack hosts |
 | `requirements.txt` | Python dependencies |
 | `install_deps.sh` / `install_deps.bat` | Create `.venv` and install dependencies |
 | `activate_venv.sh` / `activate_venv.bat` | Activate `.venv` |
 | `Dockerfile` | Image for `health_server` only |
 | `rebuild.ubuntu.sh` / `rebuild.windows.bat` | Rebuild and run container |
-| `run_ip_change.sh` | Example host runner for `ip_change.py` |
+| `run_ip_change.sh` | Host runner for `ip_change.py` (requires settings file argument) |
 
 ---
 
